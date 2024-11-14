@@ -3,25 +3,40 @@
 #include <Adafruit_Sensor.h>
 #include <BluetoothSerial.h>
 
+BluetoothSerial SerialBt;
+Adafruit_LIS3DH lis = Adafruit_LIS3DH();
+
+#define SerialPortBt SerialBt
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-Adafruit_LIS3DH lis = Adafruit_LIS3DH();
+//PIN define
+const char *pin = "0000";
 
 void setup(void) {
+  SerialPortBt.begin("V2LIS3DH");
+  //SerialPortBt.setPin(pin);
   Serial.begin(115200);
   Wire.begin(SDA_PIN, SCL_PIN);
 
-  while (!Serial) delay(10);
+  while (!SerialBt) delay(10);
+  SerialBt.println("LIS3DH test!");
   Serial.println("LIS3DH test!");
-  if (! lis.begin(0x19)) {   
-    Serial.println("Couldnt start");
+
+  while (!SerialPortBt.hasClient()) {
+    Serial.println("Waiting bluetooth connection...");
+    delay(500); 
+  }
+  Serial.println("Bluetooth connesso!");
+
+  if (!lis.begin(0x19)) {
+    Serial.println("LIS3DH not start");
+    SerialPortBt.println("LIS3DH not start");
     while (1) yield();
   }
   Serial.println("LIS3DH found!");
 
-  // lis.setRange(LIS3DH_RANGE_4_G);   // 2, 4, 8 or 16 G!
-
+  // lis.setRange(LIS3DH_RANGE_4_G);   // 2, 4, 8 o 16 G!
   Serial.print("Range = "); Serial.print(2 << lis.getRange());
   Serial.println("G");
 
@@ -43,7 +58,6 @@ void setup(void) {
     case LIS3DH_DATARATE_100_HZ: Serial.println("100 Hz"); break;
     case LIS3DH_DATARATE_200_HZ: Serial.println("200 Hz"); break;
     case LIS3DH_DATARATE_400_HZ: Serial.println("400 Hz"); break;
-
     case LIS3DH_DATARATE_POWERDOWN: Serial.println("Powered Down"); break;
     case LIS3DH_DATARATE_LOWPOWER_5KHZ: Serial.println("5 Khz Low Power"); break;
     case LIS3DH_DATARATE_LOWPOWER_1K6HZ: Serial.println("1.6 Khz Low Power"); break;
@@ -51,21 +65,31 @@ void setup(void) {
 }
 
 void loop() {
-  lis.read();      // get X Y and Z data at once
-  // Then print out the raw data
+  lis.read();  // ottieni i dati X Y e Z contemporaneamente
+  // Poi stampa i dati grezzi
   Serial.print("X:  "); Serial.print(lis.x);
   Serial.print("  \tY:  "); Serial.print(lis.y);
   Serial.print("  \tZ:  "); Serial.print(lis.z);
 
-  /* Or....get a new sensor event, normalized */
+  // Stampa anche su SerialPortBt
+  SerialPortBt.print("X:  "); SerialPortBt.print(lis.x);
+  SerialPortBt.print("  \tY:  "); SerialPortBt.print(lis.y);
+  SerialPortBt.print("  \tZ:  "); SerialPortBt.print(lis.z);
+
+  /* O....ottieni un nuovo evento dal sensore, normalizzato */
   sensors_event_t event;
   lis.getEvent(&event);
 
-  /* Display the results (acceleration is measured in m/s^2) */
+  /* Mostra i risultati (l'accelerazione è misurata in m/s^2) */
   Serial.print("\t\tX: "); Serial.print(event.acceleration.x);
   Serial.print(" \tY: "); Serial.print(event.acceleration.y);
   Serial.print(" \tZ: "); Serial.print(event.acceleration.z);
   Serial.println(" m/s^2 ");
+
+  SerialPortBt.print("\t\tX: "); SerialPortBt.print(event.acceleration.x);
+  SerialPortBt.print(" \tY: "); SerialPortBt.print(event.acceleration.y);
+  SerialPortBt.print(" \tZ: "); SerialPortBt.print(event.acceleration.z);
+  SerialPortBt.println(" m/s^2 ");
 
   Serial.println();
 
