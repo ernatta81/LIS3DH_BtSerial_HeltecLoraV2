@@ -10,12 +10,12 @@ Adafruit_LIS3DH lis = Adafruit_LIS3DH();
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-//PIN define
-const char *pin = "0000";
+const char *pin = "0000";// Definisci il PIN
+bool startReceived = false; // Variabile per  "START"
 
 void setup(void) {
   SerialPortBt.begin("V2LIS3DH");
-  //SerialPortBt.setPin(pin);
+  //SerialPortBt.setPin(pin); // Abilita il PIN
   Serial.begin(115200);
   Wire.begin(SDA_PIN, SCL_PIN);
 
@@ -65,33 +65,44 @@ void setup(void) {
 }
 
 void loop() {
-  lis.read();  // ottieni i dati X Y e Z contemporaneamente
-  // Poi stampa i dati grezzi
-  Serial.print("X:  "); Serial.print(lis.x);
-  Serial.print("  \tY:  "); Serial.print(lis.y);
-  Serial.print("  \tZ:  "); Serial.print(lis.z);
+  if (SerialPortBt.available()) {
+    String command = SerialPortBt.readStringUntil('\n');  // Leggi il comando ricevuto
+    if (command == "START") {
+      startReceived = true; //  "START"
+      Serial.println("Received START command. Beginning sensor data output...");
+      SerialPortBt.println("Received START command. Beginning sensor data output...");
+    }
+  }
 
-  // Stampa anche su SerialPortBt
-  SerialPortBt.print("X:  "); SerialPortBt.print(lis.x);
-  SerialPortBt.print("  \tY:  "); SerialPortBt.print(lis.y);
-  SerialPortBt.print("  \tZ:  "); SerialPortBt.print(lis.z);
+  if (startReceived) {
+    lis.read();  // ottieni i dati X Y e Z
+    // dati grezzi
+    Serial.print("X:  "); Serial.print(lis.x);
+    Serial.print("  \tY:  "); Serial.print(lis.y);
+    Serial.print("  \tZ:  "); Serial.print(lis.z);
 
-  /* O....ottieni un nuovo evento dal sensore, normalizzato */
-  sensors_event_t event;
-  lis.getEvent(&event);
+    // Stampa su SerialPortBt
+    SerialPortBt.print("X:  "); SerialPortBt.print(lis.x);
+    SerialPortBt.print("  \tY:  "); SerialPortBt.print(lis.y);
+    SerialPortBt.print("  \tZ:  "); SerialPortBt.print(lis.z);
 
-  /* Mostra i risultati (l'accelerazione è misurata in m/s^2) */
-  Serial.print("\t\tX: "); Serial.print(event.acceleration.x);
-  Serial.print(" \tY: "); Serial.print(event.acceleration.y);
-  Serial.print(" \tZ: "); Serial.print(event.acceleration.z);
-  Serial.println(" m/s^2 ");
+    /* ottieni un nuovo evento dal sensore, normalizzato */
+    sensors_event_t event;
+    lis.getEvent(&event);
 
-  SerialPortBt.print("\t\tX: "); SerialPortBt.print(event.acceleration.x);
-  SerialPortBt.print(" \tY: "); SerialPortBt.print(event.acceleration.y);
-  SerialPortBt.print(" \tZ: "); SerialPortBt.print(event.acceleration.z);
-  SerialPortBt.println(" m/s^2 ");
+    /* Mostra i risultati (l'accelerazione è misurata in m/s^2) */
+    Serial.print("\t\tX: "); Serial.print(event.acceleration.x);
+    Serial.print(" \tY: "); Serial.print(event.acceleration.y);
+    Serial.print(" \tZ: "); Serial.print(event.acceleration.z);
+    Serial.println(" m/s^2 ");
 
-  Serial.println();
+    SerialPortBt.print("\t\tX: "); SerialPortBt.print(event.acceleration.x);
+    SerialPortBt.print(" \tY: "); SerialPortBt.print(event.acceleration.y);
+    SerialPortBt.print(" \tZ: "); SerialPortBt.print(event.acceleration.z);
+    SerialPortBt.println(" m/s^2 ");
+
+    Serial.println();
+  }
 
   delay(200);
 }
