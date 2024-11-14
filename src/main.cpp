@@ -244,7 +244,7 @@ void configureLISPerformance(){
 }
 
 void printLIS3Configuration(){
-        delay(1000);
+      delay(500);
       Serial.println("- - - LIS3DH parameter - - -");
       SerialPortBt.print("- - - LIS3DH parameter - - -");  
       // STAMPA delle impostazioni su seriale 
