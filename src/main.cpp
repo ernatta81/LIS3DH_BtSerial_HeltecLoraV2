@@ -12,7 +12,6 @@ Adafruit_LIS3DH lis = Adafruit_LIS3DH();
 
 const char *pin = "0000"; // Bluetooth il PIN
 bool startReceived = false; // Variabile per "START"
-bool configureAccelerometer = false;
 
 void configureAccelerometerSettings(); // Dichiarazione della funzione altrimenti non compila....
 void configureLISPerformance();
@@ -24,7 +23,13 @@ void setup(void) {
   SerialPortBt.begin("V2LIS3DH");
   Serial.begin(115200);
   Wire.begin(SDA_PIN, SCL_PIN);
-
+  if (!lis.begin(0x19)) {
+      Serial.println("LIS3DH not start");
+      SerialPortBt.println("LIS3DH not start");
+      while (1) yield();
+    }
+    Serial.println("LIS3DH found!");
+  
   while (!SerialBt) delay(10);
   SerialBt.println("LIS3DH test!");
   Serial.println("LIS3DH test!");
@@ -41,7 +46,6 @@ void setup(void) {
     if (SerialPortBt.available()) {
       char response = SerialPortBt.read();
       if (response == 'S' || response == 's') {
-        configureAccelerometer = true;
         Serial.println("Configurazione accelerometro...");
         SerialPortBt.println("Configurazione accelerometro...");
         configureAccelerometerSettings(); // Funzione per la configurazione
@@ -57,14 +61,6 @@ void setup(void) {
     }
   }
 
-  if (!configureAccelerometer) {
-    if (!lis.begin(0x19)) {
-      Serial.println("LIS3DH not start");
-      SerialPortBt.println("LIS3DH not start");
-      while (1) yield();
-    }
-    Serial.println("LIS3DH found!");
-  }
   Serial.println("Waiting receive START command");
   SerialPortBt.println("Waiting receive START command");
 }
@@ -75,6 +71,7 @@ void configureAccelerometerSettings() {
   configureLISDatarate();
 }
   
+char dato[200];
 
 void loop() {
   if (SerialPortBt.available()) {
@@ -92,8 +89,18 @@ void loop() {
   }
 
   if (startReceived) {
-    lis.read();  // Ottieni i dati X Y e Z
+    if ( lis.haveNewData() ) {
+      lis.read();  // Ottieni i dati X Y e Z
+      sensors_event_t event;
+      lis.getEvent(&event);
+      snprintf(dato,200,"%,%d,%d,%d,%f,%f,%f\r\n", millis(), lis.x, lis.y, lis.z, event.acceleration.x ,event.acceleration.y , event.acceleration.z );
+      //Serial.print(" m/s^2 ");
+      SerialPortBt.print(dato);
+    }
+    
 
+
+#if 0
     // Dati grezzi
     Serial.print("X:  "); Serial.print(lis.x);
     Serial.print("  \tY:  "); Serial.print(lis.y);
@@ -118,11 +125,9 @@ void loop() {
     SerialPortBt.print(" \tY: "); SerialPortBt.print(event.acceleration.y);
     SerialPortBt.print(" \tZ: "); SerialPortBt.print(event.acceleration.z);
     SerialPortBt.println(" m/s^2 ");
-
-    Serial.println();
+#endif
   }
 
-  delay(200);
 }
 
 void configureLISRange(){
@@ -190,26 +195,32 @@ void configureLISDatarate(){
         lis.setDataRate(LIS3DH_DATARATE_100_HZ);
         Serial.println("Datarate set to 100HZ");
         SerialPortBt.println("Datarate set to 100HZ");
+        break;
       } else if (range == "200HZ") {
         lis.setDataRate(LIS3DH_DATARATE_200_HZ);
         Serial.println("Datarate set to 200HZ");
         SerialPortBt.println("Datarate set to 200HZ");
+        break;
       } else if (range == "400HZ") {
         lis.setDataRate(LIS3DH_DATARATE_400_HZ);
         Serial.println("Datarate set to 400HZ");
         SerialPortBt.println("Datarate set to 400HZ");
+        break;
       } else if (range == "POWERDOWN") {
         lis.setDataRate(LIS3DH_DATARATE_POWERDOWN);
         Serial.println("Datarate set to POWERDOWN");
         SerialPortBt.println("Datarate set to POWERDOWN");
+        break;
       } else if (range == "5KHZ") {
         lis.setDataRate(LIS3DH_DATARATE_LOWPOWER_5KHZ);
         Serial.println("Datarate set to 5KHZ");
         SerialPortBt.println("Datarate set to 5KHZ");
+        break;
       } else if (range == "10K6Z") {
         lis.setDataRate(LIS3DH_DATARATE_LOWPOWER_1K6HZ);
         Serial.println("Datarate set to 10K6Z");
         SerialPortBt.println("Datarate set to 10K6Z");
+        break;
       }
      }  
     }
